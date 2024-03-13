@@ -1,19 +1,22 @@
-import { useContext } from 'react';
-import { FSContext } from '../react/ctx';
-import { FolderItem } from './FolderItem';
-import { observer } from 'mobx-react-lite';
+import { Folder } from '../model/fs';
 
-export const FolderTree = observer(() => {
-  const fs = useContext(FSContext);
-  console.log('FolderTree', fs);
+export const FolderTree = (props: {
+  folder: Folder;
+  index: number;
+  render: (folder: Folder, idx: number) => React.ReactNode;
+}) => {
   return (
-    <>
-      <div>Upload to: "{fs.uploadTo.name}"</div>
-      <FolderItem
-        folder={fs.uploadTo}
-        checkedId={fs.uploadTo.id}
-        onChange={fs.setUploadToFolder}
-      />
-    </>
+    <div>
+      <div>{props.render(props.folder, props.index)}</div>
+      {props.folder.children.length > 0 && (
+        <ul>
+          {props.folder.children.map((f, idx) => (
+            <li key={f.id}>
+              <FolderTree folder={f} index={idx} render={props.render} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
-});
+};

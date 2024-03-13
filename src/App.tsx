@@ -2,7 +2,7 @@ import { ChangeEvent, useContext, useState } from 'react';
 import AddButton from './components/AddButton';
 import { uploadImageToServer } from './model/uploadImageToServer';
 import { observer } from 'mobx-react-lite';
-import { FolderTree } from './components/FolderTree';
+import { FolderRootTree } from './components/FolderRootTree';
 import { FSContext } from './react/ctx';
 import { ImageList } from './components/ImageList';
 
@@ -29,7 +29,7 @@ export const App = observer(() => {
     <div>
       <ImageList />
       {isLoading ? <h2>Loading...</h2> : <AddButton onImageAdd={onImageAdd} />}
-      <FolderTree />
+      <FolderRootTree />
     </div>
   );
 });

@@ -1,5 +1,6 @@
 import { computed } from 'mobx';
 import { idProp, model, Model, modelAction, prop } from 'mobx-keystone';
+import { belongsTo } from '../lib/belongsTo';
 
 @model('fs/file/Image')
 export class ImageItem extends Model({
@@ -28,6 +29,11 @@ export class Folder extends Model({
   }
 
   @modelAction
+  rename(n: string) {
+    this.name = n;
+  }
+
+  @modelAction
   setName(n: string) {
     this.name = n;
     return n;
@@ -36,10 +42,6 @@ export class Folder extends Model({
   @computed
   get isRoot() {
     return this.parent === this;
-  }
-  @computed
-  get countChildren() {
-    return this.children.length;
   }
 
   @modelAction
@@ -54,6 +56,11 @@ export class Folder extends Model({
   }
 
   @modelAction
+  getNestedChildById(id: string): Folder | undefined {
+    return this.children.find((f) => f.id === id ?? f.getNestedChildById(id));
+  }
+
+  @modelAction
   removeChild(child: Folder) {
     if (child === this) {
       return;
@@ -64,36 +71,39 @@ export class Folder extends Model({
   }
 }
 
-export const belongsTo = (fld: Folder, root: Folder) => {
-  let p: Folder | null = fld;
-  while (p) {
-    if (!p.parent || p === p.parent) {
-      return p === root;
-    }
-    p = p.parent;
-  }
-  return false;
-};
-
 @model('app/FileStore')
 export class FileStore extends Model({
   root: prop<Folder>(),
-  uploadTo: prop<Folder>(),
+  uploadToId: prop<string>(),
   images: prop<ImageItem[]>(() => []),
 }) {
-  @modelAction
-  setUploadToFolder(fld: Folder) {
-    if (!belongsTo(fld, this.root)) {
-      throw new Error('Folder not in root');
+  protected onInit(): void {
+    console.log('FileStore/onInit', this);
+    this.uploadToId = this.root.id;
+  }
+
+  getUploadToFoolder() {
+    const fld = this.root.getNestedChildById(this.uploadToId);
+    if (!fld) {
+      // throw new Error('uploadTo not found');
+      return this.root;
     }
-    this.uploadTo = fld;
+    return fld;
+  }
+
+  @modelAction
+  setUploadTo(fld: Folder) {
+    if (!belongsTo(fld, this.root)) {
+      return;
+    }
+    this.uploadToId = fld.id;
   }
 
   @modelAction
   addImage(data: string) {
     const img = new ImageItem({
       createdAt: Date.now(),
-      folderId: this.uploadTo.id,
+      folderId: this.uploadToId,
       data,
     });
     this.images.push(img);

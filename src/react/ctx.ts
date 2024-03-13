@@ -1,23 +1,13 @@
 import { createContext } from 'react';
 import { FileStore, Folder } from '../model/fs';
 
-export const createDefaultFS_ = () => {
-  const rootFolder = new Folder({ name: 'root', parent: null });
-  const defaultFolder = new Folder({
-    name: 'Untitled folder',
-    parent: rootFolder,
-  });
+export const createDefaultFS = () => {
+  const root = new Folder({ name: 'Untitled Folder', parent: null });
   return new FileStore({
-    root: rootFolder,
-    uploadTo: defaultFolder,
+    root,
+    uploadToId: root.id,
     images: [],
   });
 };
-export const createDefaultFS = () =>
-  new FileStore({
-    root: new Folder({ name: 'root', parent: null }),
-    uploadTo: new Folder({ name: 'Untitled folder', parent: null }),
-    images: [],
-  });
 
 export const FSContext = createContext<FileStore>(createDefaultFS());

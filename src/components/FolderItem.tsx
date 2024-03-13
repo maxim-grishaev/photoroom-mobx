@@ -1,32 +1,40 @@
+import { observer } from 'mobx-react-lite';
+import { useContext, useState } from 'react';
+import { FSContext } from '../react/ctx';
 import { Folder } from '../model/fs';
 
-export const FolderItem = (props: {
-  checkedId: string;
-  folder: Folder;
-  onChange: (folder: Folder) => void;
-}) => {
+export const FolderItem = observer((props: { folder: Folder; idx: number }) => {
+  const [isEditable, setEditable] = useState(false);
+  const [name, setName] = useState(props.folder.name);
+  const fs = useContext(FSContext);
+  const onClick = () => fs.setUploadTo(props.folder);
+  const isChecked = fs.uploadToId === props.folder.id;
   return (
     <div>
-      <div>
-        <input
-          type='checkbox'
-          checked={props.folder.id === props.checkedId}
-          onChange={() => props.onChange(props.folder)}
-        />
-        {props.folder.name}
-      </div>
-
-      <ul>
-        {props.folder.children.map((f) => (
-          <li key={f.id}>
-            <FolderItem
-              folder={f}
-              checkedId={props.checkedId}
-              onChange={props.onChange}
-            />
-          </li>
-        ))}
-      </ul>
+      {isChecked ? '→' : '･'}
+      {isEditable ? (
+        <div>
+          <input
+            type='text'
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <button
+            onClick={() => {
+              setEditable(false);
+              props.folder.rename(name);
+            }}
+          >
+            Save
+          </button>
+        </div>
+      ) : (
+        <p>
+          props.folder.name{' '}
+          <button onClick={() => setEditable(true)}>Edit</button>
+        </p>
+      )}
+      <button onClick={onClick}>Set upload to</button>
     </div>
   );
-};
+});
