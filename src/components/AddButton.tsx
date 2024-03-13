@@ -1,5 +1,5 @@
-import { ChangeEvent } from "react";
-import startImg from "./startButton.svg";
+import { ChangeEvent } from 'react';
+import startImg from './startButton.svg';
 
 export default function AddButton({
   onImageAdd,
@@ -8,17 +8,17 @@ export default function AddButton({
 }): JSX.Element {
   return (
     <label
-      className="flex items-center justify-center cursor-pointer w-screen h-screen"
-      htmlFor="customFileAdd"
+      className='flex items-center justify-center cursor-pointer w-screen'
+      htmlFor='customFileAdd'
     >
       <input
-        type="file"
+        type='file'
         onChange={onImageAdd}
-        className="opacity-0 absolute z-0 w-0 h-0"
-        id="customFileAdd"
-        accept=".png, .jpg, .jpeg"
+        className='opacity-0 absolute z-0 w-0 h-0'
+        id='customFileAdd'
+        accept='.png, .jpg, .jpeg'
       />
-      <img src={startImg} alt="" className="w-32 h-auto z-1" />
+      <img src={startImg} alt='' className='w-32 h-auto z-1' />
     </label>
   );
 }

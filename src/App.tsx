@@ -1,66 +1,35 @@
-import { ChangeEvent, useState } from "react";
-import AddButton from "./components/AddButton";
-import loadImage, { LoadImageResult } from "blueimp-load-image";
-import { API_KEY, API_URL, BASE64_IMAGE_HEADER } from "./constants";
+import { ChangeEvent, useContext, useState } from 'react';
+import AddButton from './components/AddButton';
+import { uploadImageToServer } from './model/uploadImageToServer';
+import { observer } from 'mobx-react-lite';
+import { FolderTree } from './components/FolderTree';
+import { FSContext } from './react/ctx';
+import { ImageList } from './components/ImageList';
 
-function App() {
-  const [result, setResult] = useState<string | null>(null);
-
-  const uploadImageToServer = (file: File) => {
-    loadImage(file, {
-      maxWidth: 400,
-      maxHeight: 400,
-      canvas: true,
-    })
-      .then(async (imageData: LoadImageResult) => {
-        const image = imageData.image as HTMLCanvasElement;
-        const imageBase64 = image.toDataURL("image/png");
-        const imageBase64Data = imageBase64.replace(BASE64_IMAGE_HEADER, "");
-        const data = {
-          image_file_b64: imageBase64Data,
-        };
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "x-api-key": API_KEY,
-          },
-          body: JSON.stringify(data),
-        });
-
-        if (response.status >= 400 && response.status < 600) {
-          throw new Error("Bad response from server");
-        }
-
-        const result = await response.json();
-        const base64Result = BASE64_IMAGE_HEADER + result.result_b64;
-        setResult(base64Result);
-      })
-
-      .catch((error) => {
-        console.error(error);
-      });
-  };
+export const App = observer(() => {
+  const fs = useContext(FSContext);
+  const [isLoading, setLoading] = useState<boolean>(false);
 
   const onImageAdd = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      uploadImageToServer(e.target.files[0]);
+    const file = e.target.files?.[0];
+    setLoading(true);
+    if (file) {
+      uploadImageToServer(file)
+        .then((res) => fs.addImage(res))
+        .catch((error) => {
+          console.error(error);
+        })
+        .then(() => setLoading(false));
     } else {
-      console.error("No file was picked");
+      console.error('No file was picked');
     }
   };
 
   return (
     <div>
-      {!result && <AddButton onImageAdd={onImageAdd} />}
-      {result && (
-        <div className="flex items-center justify-center h-screen w-screen">
-          <img src={result} className="block w-80" alt="result from the API" />
-        </div>
-      )}
+      <ImageList />
+      {isLoading ? <h2>Loading...</h2> : <AddButton onImageAdd={onImageAdd} />}
+      <FolderTree />
     </div>
   );
-}
-
-export default App;
+});
