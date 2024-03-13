@@ -1,3 +1,24 @@
+# Solution
+
+I've used mobx-keystone to manage the state of the app.
+State is shared via context.
+
+Implemented:
+
+- image upload history
+- folder rename
+
+There is a generic "FolderTree" component that can be used to selct where to move image if want to change image position.
+
+**Unimplemented in UI, but supported in data-model:**
+
+- working with folder tree structure: create subfilders
+- attaching image to a folder (`filderId` in ImageItem model)
+
+**Missing functionality:**
+
+- localStorage persistance, but it's trivial to implement with mobx-keystone
+
 # Getting Started with this template
 
 Make sure you follow the .nvmrc and use Node 18
