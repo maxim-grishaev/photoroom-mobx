@@ -1,12 +1,18 @@
-import { Folder } from '../model/fs';
-
-export const belongsTo = (fld: Folder, root: Folder) => {
-  let p: Folder | null = fld;
+export const belongsTo = <T extends NonNullable<unknown>>(
+  fld: T,
+  isFound: (fld: T) => boolean,
+  getNext: (fld: T) => T | null,
+) => {
+  let p: T | null = fld;
   while (p) {
-    if (!p.parent || p === p.parent) {
-      return p === root;
+    const parent = getNext(p);
+    if (!parent) {
+      return false;
     }
-    p = p.parent;
+    if (isFound(parent)) {
+      return true;
+    }
+    p = parent;
   }
   return false;
 };

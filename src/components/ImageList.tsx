@@ -14,11 +14,13 @@ export const ImageList = observer(() => {
           <li key={image.id}>
             <div className='flex items-center justify-center w-screen'>
               <img
-                src={image.data}
+                src={image.dataURI}
                 className='block w-80'
                 alt='result from the API'
               />
-              {new Date(image.createdAt).toISOString()}
+              <br />
+              {new Date(image.createdAt).toISOString()} at{' '}
+              {fs.getFolderById(image.folderId)?.name}
             </div>
           </li>
         ))}

@@ -1,111 +1,171 @@
-import { computed } from 'mobx';
-import { idProp, model, Model, modelAction, prop } from 'mobx-keystone';
+import {
+  action,
+  computed,
+  makeObservable,
+  observable,
+  onReactionError,
+} from 'mobx';
 import { belongsTo } from '../lib/belongsTo';
 
-@model('fs/file/Image')
-export class ImageItem extends Model({
-  id: idProp,
-  folderId: prop<string>(),
-  createdAt: prop<number>(),
-  data: prop<string>(),
-}) {
-  @modelAction
+export class ImageItem {
+  readonly id = (Math.random() + Date.now()).toString(36);
+  readonly createdAt = Date.now();
+  @observable folderId: string;
+  @observable dataURI: string;
+
+  constructor(data: { folderId: string; dataURI: string }) {
+    makeObservable(this);
+    this.folderId = data.folderId;
+    this.dataURI = data.dataURI;
+  }
+
+  @action
   moveToFolder(fld: Folder) {
     this.folderId = fld.id;
   }
 }
 
-@model('fs/Folder')
-export class Folder extends Model({
-  id: idProp,
-  name: prop<string>('Untitled folder'),
-  children: prop<Folder[]>(() => [] as Folder[]),
-  parent: prop<Folder | null>(),
-}) {
-  protected onInit(): void {
-    if (this.parent) {
-      this.parent.addChild(this);
-    }
+export class Folder {
+  readonly id = (Math.random() + Date.now()).toString(36);
+  @observable name: string;
+  @observable parentId: string | null = null;
+  // @observable children: Folder[];
+
+  constructor(data: {
+    name: string;
+    parentId?: string | null;
+    // children?: Folder[]
+  }) {
+    makeObservable(this);
+    this.name = data.name;
+    this.parentId = data.parentId ?? null;
+    // this.children = data.children ?? [];
   }
 
-  @modelAction
+  @action
   rename(n: string) {
     this.name = n;
   }
 
-  @modelAction
+  @action
   setName(n: string) {
     this.name = n;
     return n;
   }
 
-  @computed
-  get isRoot() {
-    return this.parent === this;
-  }
-
-  @modelAction
-  addChild(fld: Folder) {
-    console.log('addChild', fld);
-    if (fld === this) {
+  @action
+  setParentId(parentId: string | null) {
+    if (parentId === this.parentId) {
       return;
     }
-    fld.parent?.removeChild(fld);
-    fld.parent = this;
-    this.children.push(fld);
-  }
-
-  @modelAction
-  getNestedChildById(id: string): Folder | undefined {
-    return this.children.find((f) => f.id === id ?? f.getNestedChildById(id));
-  }
-
-  @modelAction
-  removeChild(child: Folder) {
-    if (child === this) {
-      return;
-    }
-    if (child.parent === this) {
-      this.children = this.children.filter((c) => c !== child);
-    }
+    this.parentId = parentId;
   }
 }
 
-@model('app/FileStore')
-export class FileStore extends Model({
-  root: prop<Folder>(),
-  uploadToId: prop<string>(),
-  images: prop<ImageItem[]>(() => []),
-}) {
-  protected onInit(): void {
-    console.log('FileStore/onInit', this);
-    this.uploadToId = this.root.id;
+interface FolderTree {
+  folder: Folder;
+  children: FolderTree[];
+}
+
+export class FileStore {
+  @observable uploadToId: string;
+  @observable images: ImageItem[] = [];
+  @observable rootId: string;
+  @observable byId = new Map<string, Folder>();
+
+  constructor(data: { rootName: string; images: ImageItem[] }) {
+    makeObservable(this);
+    const root = new Folder({ name: data.rootName });
+    this.rootId = root.id;
+    this.byId.set(root.id, root);
+    this.uploadToId = root.id;
+    this.images = data.images;
   }
 
-  getUploadToFoolder() {
-    const fld = this.root.getNestedChildById(this.uploadToId);
+  // @action
+  // hydrate(byId: Map<string, Folder>) {
+  //   this.byId = byId;
+  // })
+
+  getFolderById(fldId: string) {
+    return this.byId.get(fldId);
+  }
+
+  getChildrenOf(fldId: string) {
+    return Array.from(this.byId.values()).filter((f) => f.parentId === fldId);
+  }
+
+  @computed
+  get rootTree() {
+    return this.getNestedChildTree(this.rootId);
+  }
+
+  getNestedChildTree(fldId: string): FolderTree {
+    const fld = this.byId.get(fldId);
     if (!fld) {
-      // throw new Error('uploadTo not found');
-      return this.root;
+      throw new Error(`Invariant: folder id "${fldId}" not found`);
+    }
+    return {
+      folder: fld,
+      children: this.getChildrenOf(fldId).map((f) =>
+        this.getNestedChildTree(f.id),
+      ),
+    };
+  }
+
+  @action
+  createFolder(name: string, parentId: string) {
+    console.log('createFolder', name, parentId);
+    if (!this.byId.has(parentId)) {
+      throw new Error(`Parent id "${parentId}" not found`);
+    }
+    const fld = new Folder({ name, parentId });
+    this.byId.set(fld.id, fld);
+    return fld;
+  }
+
+  @computed
+  get uploadTo() {
+    const fld = this.byId.get(this.uploadToId);
+    if (!fld) {
+      throw new Error(`Invariant: uploadToId ${this.uploadToId} is missing`);
     }
     return fld;
   }
 
-  @modelAction
+  @computed
+  get root() {
+    const fld = this.byId.get(this.rootId);
+    if (!fld) {
+      throw new Error(`Invariant: rootId ${this.rootId} is missing`);
+    }
+    return fld;
+  }
+
+  @action
   setUploadTo(fld: Folder) {
-    if (!belongsTo(fld, this.root)) {
+    if (
+      !belongsTo(
+        fld,
+        (fld) => fld.id === this.rootId,
+        (f) => (f.parentId === null ? null : this.byId.get(f.parentId) ?? null),
+      )
+    ) {
       return;
     }
     this.uploadToId = fld.id;
   }
 
-  @modelAction
+  @action
   addImage(data: string) {
     const img = new ImageItem({
-      createdAt: Date.now(),
       folderId: this.uploadToId,
-      data,
+      dataURI: data,
     });
     this.images.push(img);
   }
 }
+
+onReactionError((err) => {
+  console.error(err);
+});

@@ -1,6 +1,6 @@
 # Solution
 
-I've used mobx-keystone to manage the state of the app.
+I've used mobx to manage the state of the app.
 State is shared via context.
 
 Implemented:
@@ -17,7 +17,7 @@ There is a generic "FolderTree" component that can be used to selct where to mov
 
 **Missing functionality:**
 
-- localStorage persistance, but it's trivial to implement with mobx-keystone
+- localStorage persistance
 
 # Getting Started with this template
 

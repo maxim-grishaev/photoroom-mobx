@@ -6,7 +6,7 @@ import { FolderItem } from './FolderItem';
 
 export const FolderRootTree = observer(() => {
   const fs = useContext(FSContext);
-  const uploadTo = fs.getUploadToFoolder();
+  const { uploadTo } = fs;
   return (
     <>
       <div>Upload to: "{uploadTo.name}"</div>
@@ -14,6 +14,7 @@ export const FolderRootTree = observer(() => {
         folder={fs.root}
         index={0}
         render={(folder, idx) => <FolderItem folder={folder} idx={idx} />}
+        getChildrenOf={(id) => fs.getChildrenOf(id)}
       />
     </>
   );

@@ -19,7 +19,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    // mobx-keystone
+    // mobx
     "experimentalDecorators": true,
     "useDefineForClassFields": true
   },
